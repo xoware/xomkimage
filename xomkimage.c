@@ -249,7 +249,7 @@ main(int argc, char *argv[])
 	errno = 0;
 	for (i = 0; i < le32toh(hdr.nimages); i++) {
 		written = write(1, fmaps[i], le32toh(images[i].size));
-		DBG("Writing image=%d: written= %d size=%d : %m\n", i, written, le32toh(images[i].size), errno);
+		DBG("Writing image=%d: written= %zd size=%d : %m\n", i, written, le32toh(images[i].size), errno);
 		munmap(fmaps[i], le32toh(images[i].size));
 	}
 
