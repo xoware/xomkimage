@@ -21,6 +21,8 @@ struct GlobalHdr
 	uint32_t hdr_version;  /* header version       */
 	uint32_t nimages;      /* Number of images     */
 	uint32_t raw_size;     /* length of raw data combining all images  */
+	char this_version[32];  // firmware version in this file
+	char min_version[32];  //  minimum version required to upgrade to this file.  Allows forcing upgrade to version 2 before upgrade to version 3
 	uint8_t digest[16];    /* md5sum over raw data */
 };
 

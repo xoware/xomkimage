@@ -69,12 +69,14 @@ fatal(const char *fmt, ...)
 static void
 usage(const char *s)
 {
-	fprintf(stderr, "Usage: %s file1:type1:n1:offset:name [file2:type2:n2:offset:name ...] > output.img\n", s);
+	fprintf(stderr, "Usage: %s file1:type1:n1:offset:devname:filename [file2:type2:n2:offset:devname:filename ...] > output.img\n", s);
 	fprintf(stderr, "where: \n");
 	fprintf(stderr, "\tfile# is a relative path to a binary image\n");
 	fprintf(stderr, "\ttype# is partition type (mtd,ubivol,file) \n");
 	fprintf(stderr, "\tn# is the partition number, or UBI partition (usually 0  for /dev/ubi0) \n");
 	fprintf(stderr, "\tofsset.   Always set to zero unless raw image \n");
+	fprintf(stderr, "\tdevname.  /dev/devname   mtdX   or mmcblk0pX \n");
+	fprintf(stderr, "\tfilename.  kernel, rootfs  \n");
 	fprintf(stderr, "The output file will be printed to stdout\n");
 	exit(EXIT_FAILURE);
 }
@@ -104,7 +106,8 @@ process_arg(const char *__arg, void ***__fmaps, struct ImageHeader **__images, s
 	int fd;
 	void *fmap;
 	char *stringp = arg;
-	char *token, *file_name = NULL, *type_str = NULL, *partnum_str = NULL, *offset_str = NULL, *name = NULL;
+	char *token, *file_name = NULL, *type_str = NULL, *partnum_str = NULL, *offset_str = NULL;
+	char *devname = NULL, *filename = NULL;
 	int i;
 	enum PartType ptype;
 	
@@ -112,7 +115,7 @@ process_arg(const char *__arg, void ***__fmaps, struct ImageHeader **__images, s
 		fatal("Not enough memory\n");
 	
 	
-	for (i = 0; i < 5 ; i++) {
+	for (i = 0; i < 6 ; i++) {
 		token = strsep(&stringp, ":");
 		if (token == NULL && (i < 5)) {
 			ERROR(" too few paramaters see ussage\n");
@@ -136,7 +139,10 @@ process_arg(const char *__arg, void ***__fmaps, struct ImageHeader **__images, s
 				}
 			break;
 			case 4:
-				name = token;
+				devname = token;
+				break;
+			case 5:
+				filename = token;
 				break;
 			default:
 				fatal(" Invalid usage token=%s\n", token);
@@ -150,9 +156,13 @@ process_arg(const char *__arg, void ***__fmaps, struct ImageHeader **__images, s
 	DBG("type: %s=%d\n", type_str,ptype);
 	DBG("partnum: %s\n", partnum_str);
 	DBG("offset: %s\n", offset_str);
-	DBG("name: %s\n", name);
-	if (strlen(name) > 14) {
-		fatal("name too long:%s\n",name);
+	DBG("devname: %s\n", devname);
+	if (strlen(devname) > 30) {
+		fatal("devname too long:%s\n",devname);
+	}
+	DBG("filename: %s\n", filename);
+	if (strlen(filename) > 30) {
+		fatal("filename too long:%s\n",filename);
 	}
 	
 	if ((fd = open(file_name, O_RDONLY)) < 0)
@@ -185,7 +195,8 @@ process_arg(const char *__arg, void ***__fmaps, struct ImageHeader **__images, s
 	images[le32toh(hdr->nimages) - 1].part_type = htole32(ptype);
 	images[le32toh(hdr->nimages) - 1].partition = htole32(strtoul(partnum_str, NULL, 10));
 	images[le32toh(hdr->nimages) - 1].offset = htole32(0);
-	strcpy(images[le32toh(hdr->nimages) - 1].name, name);
+	strcpy(images[le32toh(hdr->nimages) - 1].devname, devname);
+	strcpy(images[le32toh(hdr->nimages) - 1].filename, filename);
 	
 	DBG("size: %d = 0x%x\n", (int) st.st_size, (int) st.st_size);
 	
@@ -211,6 +222,7 @@ main(int argc, char *argv[])
 	if (tcgetattr(1, &tios) == 0)
 		fatal("Won't write binary data to a terminal\n");
 
+
 	hdr.hdr_version = htole32(XO_CURRENT_HDR_VERSION);
 	hdr.nimages = 0;
 	hdr.raw_size = 0;
@@ -234,9 +246,10 @@ main(int argc, char *argv[])
 	if (written == -1) {
 		ERROR("Writing image header: %d : %m\n", errno);
 	}
+	errno = 0;
 	for (i = 0; i < le32toh(hdr.nimages); i++) {
 		written = write(1, fmaps[i], le32toh(images[i].size));
-		ERROR("Writing image %d: %d : %m\n", i, errno);
+		DBG("Writing image=%d: written= %d size=%d : %m\n", i, written, le32toh(images[i].size), errno);
 		munmap(fmaps[i], le32toh(images[i].size));
 	}
 
