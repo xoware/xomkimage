@@ -223,7 +223,7 @@ main(int argc, char *argv[])
 		fatal("Won't write binary data to a terminal\n");
 
 
-	hdr.hdr_version = htole32(XO_CURRENT_HDR_VERSION);
+	hdr.hdr_version = htole32(0);
 	hdr.nimages = 0;
 	hdr.raw_size = 0;
 	for (i = 1; i < argc; i++) {
@@ -249,7 +249,7 @@ main(int argc, char *argv[])
 	errno = 0;
 	for (i = 0; i < le32toh(hdr.nimages); i++) {
 		written = write(1, fmaps[i], le32toh(images[i].size));
-		DBG("Writing image=%d: written= %zd size=%d : %m\n", i, written, le32toh(images[i].size), errno);
+		DBG("Writing image=%d: written= %zd size=%d : %d %m\n", i, written, le32toh(images[i].size), errno);
 		munmap(fmaps[i], le32toh(images[i].size));
 	}
 

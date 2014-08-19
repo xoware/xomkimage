@@ -26,6 +26,26 @@ struct GlobalHdr
 	uint8_t digest[16];    /* md5sum over raw data */
 };
 
+enum ProductType {
+	ProductType_invalid = 0, // unset
+	ProductType_ExoKey_v1 = 1,
+	ProductType_ExoNet_xo1 = 2,
+	ProductType_last  // Last /invalid
+};
+
+
+struct GlobalHdr_v1
+{
+	uint32_t hdr_version;  /* header version       */
+	uint32_t nimages;      /* Number of images     */
+	uint32_t raw_size;     /* length of raw data combining all images  */
+	char this_version[32];  // firmware version in this file
+	char min_version[32];  //  minimum version required to upgrade to this file.  Allows forcing upgrade to version 2 before upgrade to version 3
+	uint32_t product_type_code;  // avoid writing wrong product
+	uint8_t sha256[32];    /* sha256 over raw data */
+	uint8_t signature[256];    /* sign file */
+
+};
 
 enum PartType {
 	PartType_invalid = 0, // unset

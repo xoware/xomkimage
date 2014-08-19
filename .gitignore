@@ -1,0 +1,9 @@
+*.sexp
+*.kdev4
+*.o
+
+xosigcheck
+xomkimage_v1
+xomkimage
+xosignappend
+mk_key
